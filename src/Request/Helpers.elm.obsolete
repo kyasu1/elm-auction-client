@@ -1,0 +1,294 @@
+module Request.Helpers
+    exposing
+        ( GraphQLResponse
+        , PageInfo
+        , Relay
+        , apiUrl
+        , decoder
+        , download
+        , graphQLQuery
+        , query
+        , responseDecoder
+        )
+
+import Data.AuthToken as AuthToken exposing (AuthToken(..))
+import Data.Item as Item
+import Data.Session exposing (Session)
+import Data.User as User exposing (User)
+import Dict exposing (Dict)
+import Http
+import Json.Decode as Decode exposing (Decoder)
+import Json.Decode.Pipeline as Pipeline exposing (decode, hardcoded, optional, required)
+import Json.Encode as Encode exposing (Value)
+import Request.Error as Error exposing (Error(..), RequestError, errorsDecoder)
+import Task exposing (Task)
+
+
+--import Request.Error as Error
+--
+
+
+apiUrl : String -> String
+apiUrl str =
+    "@@@apiServer@@@" ++ str
+
+
+graphQL : String
+graphQL =
+    apiUrl "/graphql"
+
+
+query : Session -> String -> String -> List String -> Decoder a -> Task Http.Error a
+query session query variables fields decoder =
+    let
+        params =
+            Encode.object
+                [ ( "query", Encode.string query )
+                , ( "variables", Encode.string variables )
+                ]
+    in
+    send session params decoder
+
+
+graphQLQuery : Session -> String -> String -> Decoder a -> Task Error a
+graphQLQuery session query variables decoder =
+    let
+        params =
+            Encode.object
+                [ ( "query", Encode.string query )
+                , ( "variables", Encode.string variables )
+                ]
+    in
+    send session params (responseDecoder decoder)
+        |> Task.mapError HttpError
+        |> Task.andThen
+            (\response ->
+                case response.errors of
+                    [] ->
+                        Task.succeed response.data
+
+                    _ ->
+                        Task.fail (GraphQLError response.errors)
+            )
+
+
+
+-- RELAY --
+
+
+type alias PageInfo =
+    { startCursor : String
+    , hasPreviousPage : Bool
+    , hasNextPage : Bool
+    , endCursor : String
+    }
+
+
+pageInfoDecoder : Decoder PageInfo
+pageInfoDecoder =
+    decode PageInfo
+        |> optional "startCursor" Decode.string ""
+        |> required "hasPreviousPage" Decode.bool
+        |> required "hasNextPage" Decode.bool
+        |> optional "endCursor" Decode.string ""
+
+
+type alias Relay a =
+    { pageInfo : PageInfo
+    , edges : a
+    }
+
+
+decoder : Decoder a -> Decoder (Relay a)
+decoder edgesDecoder =
+    decode Relay
+        |> required "pageInfo" pageInfoDecoder
+        |> required "edges" edgesDecoder
+
+
+
+-- HTTP REQEUST --
+
+
+post : { r | token : Maybe String, params : Encode.Value, decoder : Decoder a, apiUrl : String } -> Http.Request a
+post { token, params, decoder, apiUrl } =
+    let
+        headers =
+            case token of
+                Just t ->
+                    [ Http.header "Authorization" ("Bearer " ++ t) ]
+
+                Nothing ->
+                    []
+    in
+    Http.request
+        { method = "POST"
+        , headers = headers
+        , url = apiUrl
+        , body = Http.jsonBody params
+        , expect = Http.expectJson decoder
+        , timeout = Nothing
+        , withCredentials = False
+        }
+
+
+send2 :
+    { r
+        | refreshToken : String
+        , accessToken : String
+        , apiUrl : String
+    }
+    -> Encode.Value
+    -> Decoder a
+    -> Task Http.Error a
+send2 { refreshToken, accessToken, apiUrl } params decoder =
+    let
+        request token =
+            post
+                { token = Just token
+                , params = params
+                , decoder = decoder
+                , apiUrl = apiUrl
+                }
+                |> Http.toTask
+    in
+    request accessToken
+
+
+send : Session -> Encode.Value -> Decoder a -> Task Http.Error a
+send session params decoder =
+    let
+        request maybeToken =
+            post
+                { token = maybeToken
+                , params = params
+                , decoder = decoder
+                , apiUrl = apiUrl "/graphql"
+                }
+                |> Http.toTask
+    in
+    case session.user of
+        Just user ->
+            case user.token of
+                Authorized refreshToken accessToken ->
+                    request (Just accessToken)
+                        |> Task.onError
+                            (\error ->
+                                case error of
+                                    Http.BadStatus response ->
+                                        if response.status.code == 401 then
+                                            getAccessToken refreshToken
+                                                |> Task.andThen
+                                                    (\response ->
+                                                        case response.data of
+                                                            Just token ->
+                                                                request (Just token)
+
+                                                            Nothing ->
+                                                                -- Invalid refresh token, you need to relogin
+                                                                Task.fail error
+                                                    )
+                                        else
+                                            -- Network error or something not related authentication
+                                            Task.fail error
+
+                                    _ ->
+                                        -- Network error or something not related authentication
+                                        Task.fail error
+                            )
+
+                Authenticated refreshToken ->
+                    request (Just refreshToken)
+
+                NoToken _ ->
+                    request Nothing
+
+        Nothing ->
+            request Nothing
+
+
+type alias GraphQLResponse a =
+    { data : a
+    , errors : List RequestError
+    }
+
+
+responseDecoder : Decoder a -> Decoder (GraphQLResponse a)
+responseDecoder decoder =
+    Decode.map2
+        GraphQLResponse
+        (Decode.field "data" decoder)
+        (Decode.oneOf
+            [ Decode.field "errors" errorsDecoder
+            , Decode.succeed []
+            ]
+        )
+
+
+getAccessToken : String -> Task Http.Error (GraphQLResponse (Maybe String))
+getAccessToken refreshToken =
+    let
+        query =
+            """
+          mutation GetAccesToken($refreshToken: String!) {
+            getAccessToken(input: {refreshToken: $refreshToken, clientMutationId: "getAccessToken"}) {
+              refreshToken
+              accessToken
+              expiresIn
+            }
+          }
+          """
+
+        params =
+            Encode.object
+                [ ( "query", Encode.string query )
+                , ( "variables", Encode.object [ ( "refreshToken", Encode.string refreshToken ) ] )
+                ]
+
+        decoder : Decoder (GraphQLResponse (Maybe String))
+        decoder =
+            Decode.field "getAccessToken"
+                (Decode.nullable (Decode.field "accessToken" Decode.string))
+                |> responseDecoder
+    in
+    post
+        { token = Just refreshToken
+        , params = params
+        , decoder = decoder
+        , apiUrl = graphQL
+        }
+        |> Http.toTask
+
+
+
+--        send (Authenticated refreshToken) params decoder
+-- DEPRECATE
+-- request : Session -> String -> Value -> List String -> Decoder a -> Http.Request a
+-- request { user, apiServer } url params fields decoder =
+--     Http.request
+--         { method = "POST"
+--         , headers = AuthToken.withToken (Maybe.map .token user)
+--         , url = apiServer ++ url
+--         , body = Http.jsonBody params
+--         , expect = Http.expectJson (Decode.at ("data" :: fields) decoder)
+--         , timeout = Nothing
+--         , withCredentials = False
+--         }
+
+
+download : Session -> List Item.ItemId -> Task Http.Error String
+download session selected =
+    let
+        params =
+            Encode.object
+                [ ( "list_of_id", selected |> List.map (\id -> Item.encodeItemId id) |> Encode.list )
+                ]
+    in
+    send session params Decode.string
+
+
+
+--
+--        request session "/api/download" params [ "filename" ] Decode.string
+--            |> Http.toTask
+--            |> Task.map (\filename -> session.apiServer ++ "/download?filename=" ++ filename)

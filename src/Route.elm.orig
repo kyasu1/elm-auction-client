@@ -1,0 +1,129 @@
+module Route exposing (Route(..), href, modifyUrl, newUrl, fromLocation)
+
+import UrlParser as Url exposing (parseHash, s, top, (</>), string, oneOf, Parser, (<?>), intParam, stringParam)
+import Navigation exposing (Location)
+import Html exposing (Attribute)
+import Html.Attributes
+import Data.Item as Item
+
+
+-- ROUTING --
+
+
+type Route
+    = Home (Maybe Int) (Maybe Int) (Maybe String)
+    | Login
+    | Logout
+    | Register
+    | Item Item.ItemId
+    | EditItem Item.ItemId
+    | NewItem
+
+
+route : Parser (Route -> a) a
+route =
+    oneOf
+        [ Url.map Home (top <?> intParam "page" <?> intParam "perPage" <?> stringParam "query")
+        , Url.map Login (s "login")
+        , Url.map Logout (s "logout")
+        , Url.map Register (s "register")
+        , Url.map NewItem (s "item" </> s "new")
+        , Url.map EditItem (s "item" </> s "edit" </> Item.itemIdParser)
+        , Url.map Item (s "item" </> Item.itemIdParser)
+        ]
+
+
+
+-- INTERNAL --
+
+
+routeToString : Route -> String
+routeToString route =
+    let
+        pieces =
+            case route of
+                Home maybePage maybePerPage maybeQuery ->
+                    let
+                        page =
+                            Maybe.map (\a -> "page=" ++ toString a) maybePage
+                                |> Maybe.withDefault ""
+
+                        perPage =
+                            Maybe.map (\a -> "perPage=" ++ toString a) maybePerPage
+                                |> Maybe.withDefault ""
+
+                        query =
+                            Maybe.map (\a -> "query=" ++ a) maybeQuery
+                                |> Maybe.withDefault ""
+
+                        params =
+                            [ page, perPage, query ]
+                                |> List.filter (\a -> a /= "")
+                                |> String.join "&"
+                    in
+                        case params of
+                            "" ->
+                                []
+
+                            _ ->
+                                [ "?" ++ params ]
+
+                Login ->
+                    [ "login" ]
+
+                Logout ->
+                    [ "logout" ]
+
+                Register ->
+                    [ "register" ]
+
+                Item id ->
+                    [ "item", Item.itemIdToString id ]
+
+                EditItem id ->
+                    [ "item/edit", Item.itemIdToString id ]
+
+                NewItem ->
+                    [ "item/new" ]
+    in
+        "#/" ++ (String.join "/" pieces)
+
+
+
+-- PUBLIC HELPERS --
+
+
+href : Route -> Attribute msg
+href route =
+    Html.Attributes.href (routeToString route)
+
+
+modifyUrl : Route -> Cmd msg
+modifyUrl =
+    routeToString >> Navigation.modifyUrl
+
+
+newUrl : Route -> Cmd msg
+newUrl =
+    routeToString >> Navigation.newUrl
+
+
+fromLocation : Location -> Maybe Route
+fromLocation location =
+    let
+        search =
+            String.split "?" location.hash
+                |> List.drop 1
+                |> String.join "?"
+                |> String.append "?"
+
+        hash =
+            String.split "?" location.hash
+                |> List.head
+                |> Maybe.map (\s -> parseHash route { location | hash = s, search = search })
+
+        _ =
+            Debug.log "fromLocation - hash" hash
+    in
+        hash
+            |> Maybe.withDefault (Just (Home Nothing (Just 10) Nothing))
