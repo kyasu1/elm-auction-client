@@ -50,7 +50,7 @@ toMethod method =
             Compact
 
         _ ->
-            Debug.todo "Invalid method specified"
+            Takkyubin Yamato60
 
 
 fromMethod : Method -> String
@@ -100,7 +100,7 @@ toSize size =
             Yamato160
 
         _ ->
-            Debug.todo "Invalid size specified"
+            Yamato60
 
 
 fromSize : Size -> String

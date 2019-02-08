@@ -131,7 +131,8 @@ viewForm : Model -> Html Form.Msg
 viewForm model =
     article [ class "mw5-ns ba-ns pv3-ns ph4-ns br3-ns b--light-gray w-90 mw6-ns" ]
         [ h3 [ class "tc" ] [ text "ユーザー登録" ]
-        , ul [] (List.map (\e -> li [] [ text (Debug.toString e) ]) model.errors)
+
+        -- , ul [] (List.map (\e -> li [] [ text (Debug.toString e) ]) model.errors)
         , div []
             (inputText { label = "メールアドレス", optional = False }
                 customErrorToString

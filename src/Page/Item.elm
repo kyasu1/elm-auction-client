@@ -14,7 +14,6 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
 import Markdown
 import Page.Errored as Errored exposing (PageLoadError, pageLoadError)
-import Ports
 import Request.Download
 import Request.GraphQL.Error exposing (Error)
 import Request.Item as Item
@@ -96,7 +95,12 @@ itemView session model item =
             ]
         , div [ class "ba-ns ph3-ns pb3-ns mt1 f6" ]
             [ Markdown.toHtml [] item.details.description ]
-        , button [ onClick <| CopyToClipBoard item.details.description ] [ text "copy" ]
+        , Html.node "auction-api-copy-text"
+            [ Html.Attributes.attribute "data-copy-text" item.details.description
+            ]
+            [ button [ class "bg-blue hover:bg-blue-dark text-white font-black py-2 px-4 rounded block mx-auto -mt-2" ] [ text "商品詳細をコピー" ]
+            , Html.node "auction-api-copy-text-note" [] []
+            ]
         , buttonsView session model item
         ]
 
@@ -301,7 +305,6 @@ type Msg
     | DeleteResponse (Result Error ( ItemId, Session ))
     | SliderMsg Slider.Msg
     | CloseDialog
-    | CopyToClipBoard String
 
 
 update : Session -> Msg -> Model -> ( Model, Session, Cmd Msg )
@@ -353,6 +356,3 @@ update session msg model =
 
         CloseDialog ->
             ( { model | dialog = Nothing }, session, Cmd.none )
-
-        CopyToClipBoard string ->
-            ( model, session, Ports.sendInfoOutside <| Ports.CopyToClipBoard string )

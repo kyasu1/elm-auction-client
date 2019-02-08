@@ -30,7 +30,8 @@ initialTask session maybeSearch maybeUserId =
 
         handleLoadError : a -> PageLoadError
         handleLoadError e =
-            pageLoadError Page.Other ("一覧ページが読み込めませんでした..." ++ Debug.toString e)
+            -- pageLoadError Page.Other ("一覧ページが読み込めませんでした..." ++ Debug.toString e)
+            pageLoadError Page.Other "一覧ページが読み込めませんでした..."
     in
     Task.map (\( model, updatedSession ) -> ( Model model, updatedSession )) (Feed.initialTask session config)
         |> Task.mapError handleLoadError

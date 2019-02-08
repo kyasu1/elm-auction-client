@@ -116,7 +116,8 @@ view model =
             , div [] (formView model) |> Html.map FormMsg
             , Category.view model.category |> Html.map CategoryMsg
             , ImageUploader.view model.uploader |> Html.map ImageUploaderMsg
-            , div [] [ Form.getErrors model.form |> Debug.toString |> text ]
+
+            -- , div [] [ Form.getErrors model.form |> Debug.toString |> text ]
             , div [ class "" ]
                 [ button
                     [ type_ "submit"

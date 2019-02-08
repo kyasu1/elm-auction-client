@@ -44,7 +44,7 @@ validateHelper errorText field =
         --     text errorText
         --   else
         --     text ""
-        [ text (field.liveError |> Maybe.map (\a -> Debug.toString a) |> Maybe.withDefault "")
+        [-- text (field.liveError |> Maybe.map (\a -> Debug.toString a) |> Maybe.withDefault "")
         ]
 
 
@@ -95,7 +95,7 @@ baseInput2 config content errorToString field =
                                 errorToString customError
 
                             _ ->
-                                Debug.toString e
+                                "Error"
                     )
                 |> Maybe.withDefault ""
             )
@@ -274,7 +274,7 @@ inputRest config counter field =
                     , style "width" "8rem"
                     ]
                     [ text "残り"
-                    , span [ class "dib tr w2 mr1" ] [ Debug.toString rest |> text ]
+                    , span [ class "dib tr w2 mr1" ] [ String.fromFloat rest |> text ]
                     , text "文字"
                     ]
                 ]

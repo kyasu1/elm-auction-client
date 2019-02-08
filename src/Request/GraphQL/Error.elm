@@ -85,15 +85,11 @@ httpErrorToString error =
             "Network Error"
 
         Http.BadStatus response ->
-            "Bad Http Status: " ++ Debug.toString response.status.code
+            "Bad Http Status: " ++ String.fromInt response.status.code
 
         Http.BadPayload message response ->
-            let
-                _ =
-                    Debug.log "message: " response.body
-            in
             "Bad Http Payload: "
-                ++ Debug.toString message
+                ++ message
                 ++ " ("
-                ++ Debug.toString response.status.code
+                ++ String.fromInt response.status.code
                 ++ ")"

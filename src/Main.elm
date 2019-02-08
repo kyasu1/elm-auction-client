@@ -381,7 +381,7 @@ updatePage page msg model =
                     )
 
                 Err err ->
-                    case Debug.log "err" err of
+                    case err of
                         _ ->
                             let
                                 updatedSession =

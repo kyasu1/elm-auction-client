@@ -15,11 +15,6 @@ import Json.Decode as Decode
 import Json.Encode as Encode exposing (Value)
 
 
-
--- port date : (Value -> msg) -> Sub msg
--- port onSessionChange : (Value -> msg) -> Sub msg
-
-
 type alias GenericOutsideData =
     { tag : String, data : Encode.Value }
 
@@ -30,7 +25,6 @@ type InfoForOutside
     | ClearSession
     | SetEditState Bool
     | ReplaceState String
-    | CopyToClipBoard String
 
 
 type InfoForElm
@@ -62,9 +56,6 @@ sendInfoOutside info =
         ReplaceState state ->
             infoForOutside { tag = "ReplaceState", data = Encode.string state }
 
-        CopyToClipBoard string ->
-            infoForOutside { tag = "CopyToClipBoard", data = Encode.string string }
-
 
 getInfoFromOutside : (InfoForElm -> msg) -> (String -> msg) -> Sub msg
 getInfoFromOutside tagger onError =
@@ -78,5 +69,5 @@ getInfoFromOutside tagger onError =
                         |> tagger
 
                 _ ->
-                    onError <| "Unexpected info from ouside: " ++ Debug.toString outsideInfo
+                    onError <| "Unexpected info from ouside: " ++ outsideInfo.tag
         )
