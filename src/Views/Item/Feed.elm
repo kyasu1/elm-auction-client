@@ -1,5 +1,6 @@
 module Views.Item.Feed exposing (Model, Msg, initialTask, subscriptions, update, view)
 
+import Api exposing (apiUrl)
 import Data.Item as Item exposing (Item, ItemId)
 import Data.Item.Feed as Feed exposing (Feed)
 import Data.Selling as Selling
@@ -337,7 +338,7 @@ downloadDialog maybeFileName =
         [ case maybeFileName of
             Just fileName ->
                 a
-                    [ href <| "/download?filename=" ++ fileName
+                    [ href <| apiUrl <| "/download?filename=" ++ fileName
                     , Html.Attributes.download fileName
                     , onClick CloseDialog
                     ]

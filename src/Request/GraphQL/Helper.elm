@@ -1,17 +1,12 @@
-module Request.GraphQL.Helper exposing (apiUrl, post)
+module Request.GraphQL.Helper exposing (post)
 
+import Api exposing (apiUrl)
 import Data.Item as Item
 import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
 import Request.GraphQL.Error as Error exposing (Error(..))
 import Task exposing (Task)
-
-
-apiUrl : String -> String
-apiUrl str =
-    --    "@@@apiServer@@@" ++ str
-    "https://producer.officeiko.co.jp/" ++ str
 
 
 post :
