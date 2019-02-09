@@ -4,7 +4,7 @@
   "description": "",
   "main": "main.js",
   "scripts": {
-    "build": "rm -rf dist && parcel build index.html",
+    "build": "rm -rf dist && parcel build index.html && cp _redirects dist/_redirects ",
     "dev": "parcel index.html",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
