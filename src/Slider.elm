@@ -177,14 +177,14 @@ view model =
                         ]
                         (List.indexedMap (stage width current) images)
                     , if current > 0 then
-                        a [ class "cursor-pointer h-full flex items-center pin-l pin-t absolute ", onClick Prev ]
+                        div [ class "cursor-pointer h-full flex items-center pin-l pin-t absolute ", onClick Prev ]
                             [ div [ class "w-8 text-right text-2xl md:text-4xl mx-2 md:mx-4" ] [ img [ src btnLeft ] [] ]
                             ]
 
                       else
                         text ""
                     , if current + 1 < List.length images then
-                        a [ class "cursor-pointer h-full flex items-center pin-r pin-t absolute", onClick Next ]
+                        div [ class "cursor-pointer h-full flex items-center pin-r pin-t absolute", onClick Next ]
                             [ div [ class "w-8 text-left text-2xl md:text-4xl mx-2 md:mx-4" ] [ img [ src btnRight ] [] ]
                             ]
 

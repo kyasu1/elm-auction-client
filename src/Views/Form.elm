@@ -2,12 +2,12 @@ module Views.Form exposing
     ( baseInput3
     , inputMoney
     , inputPassword
-    , inputRadio
     , inputRest
     , inputRest3
     , inputSelect
     , inputText
     , radioButton
+    , radioOption
     , textarea
     , validateHelper
     )
@@ -347,12 +347,12 @@ inputMoney config field =
     baseInput config content field
 
 
-inputRadio : String -> Html a -> Html a
-inputRadio text_ content =
-    div [ class "mr2" ]
-        [ label [ class "f6 db mb1 mt2 " ]
-            [ content
-            , span [ class "ml2" ] [ text text_ ]
+radioOption : Form.FieldState e String -> String -> ( String, String ) -> Html Form.Msg
+radioOption field name_ ( id_, text_ ) =
+    div [ class "mr-2" ]
+        [ label [ class "block mt-2" ]
+            [ Form.Input.radioInput id_ field [ name name_ ]
+            , span [ class "ml-2" ] [ text text_ ]
             ]
         ]
 

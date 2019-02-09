@@ -28,8 +28,7 @@ import Data.Shipping as Shipping exposing (Payer)
 import Data.User as User exposing (User)
 import Date exposing (Date)
 import Json.Decode as Decode exposing (Decoder)
-import Json.Decode.Extra
-import Json.Decode.Pipeline as Pipeline exposing (custom, hardcoded, required)
+import Json.Decode.Pipeline exposing (custom, hardcoded, required)
 import Json.Encode as Encode exposing (Value)
 import Time
 import Url.Parser as Parser

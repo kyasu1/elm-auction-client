@@ -6,7 +6,7 @@ import Form.Input as Input
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Views.EditItem.Form exposing (ItemForm)
-import Views.Form exposing (inputRadio, inputRest)
+import Views.Form exposing (inputRest, radioOption)
 import Views.Style as Style
 
 
@@ -16,15 +16,10 @@ view { form, masters } =
         paymentMethod =
             Form.getFieldAsString "paymentMethod" form
     in
-    div []
+    div [ class "flex flex-col" ]
         [ label [ class Style.formLabel ] [ text "支払方法" ]
-        , div [ class "flex flex-column flex-row-l justify-between" ]
-            (List.map (viewPaymentMethod paymentMethod) (Masters.toTuple "payment_methods" masters))
-        , p [ class "f6 dark-red" ]
+        , div [ class "flex flex-col md:flex-row md:flex-wrap" ]
+            (List.map (radioOption paymentMethod "paymentMethod") (Masters.toTuple "payment_methods" masters))
+        , p [ class "font-bold text-red py-1" ]
             [ text "30万円以上の場合は代引きが利用出来ません。3万円以下の場合はオリコを選択しないで下さい。" ]
         ]
-
-
-viewPaymentMethod : Form.FieldState e String -> ( String, String ) -> Html Form.Msg
-viewPaymentMethod field ( id_, text_ ) =
-    inputRadio text_ (Input.radioInput id_ field [ name "paymentMethod" ])

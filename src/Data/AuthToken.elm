@@ -84,7 +84,7 @@ getRefreshToken token =
 updateAccessToken : AuthToken -> AccessToken -> AuthToken
 updateAccessToken token accessToken =
     case token of
-        NoToken reason ->
+        NoToken _ ->
             token
 
         Authenticated refreshToken ->

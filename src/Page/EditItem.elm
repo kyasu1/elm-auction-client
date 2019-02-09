@@ -164,6 +164,8 @@ formView ({ masters, form } as model) =
     , UI.textarea
         { label = "商品詳細", required = True }
         (Form.getFieldAsString "description" form)
+
+    -- , UI.textarea2 (span [] [ text "商品詳細", i [ class "fas fa-clipboard" ] [] ]) (Form.getFieldAsString "description" form)
     , Html.node "auction-api-copy-text"
         [ Html.Attributes.attribute "data-copy-text"
             (Form.getFieldAsString "description" form |> .value |> Maybe.withDefault "")
@@ -171,10 +173,10 @@ formView ({ masters, form } as model) =
         [ button [ class "bg-blue hover:bg-blue-dark text-white font-black py-2 px-4 rounded block mx-auto -mt-2" ] [ text "商品詳細をコピー" ]
         , Html.node "auction-api-copy-text-note" [] []
         ]
-    , Selling.view model.form
-    , PaymentMethod.view model
-    , Shipping.form model.form
-    , Condition.view model
+    , div [ class "border-grey border-solid border rounded-sm p-2 my-2" ] [ Selling.view model.form ]
+    , div [ class "border-grey border-solid border rounded-sm p-2 my-2" ] [ PaymentMethod.view model ]
+    , div [ class "border-grey border-solid border rounded-sm p-2 my-2" ] [ Shipping.form model.form ]
+    , div [ class "border-grey border-solid border rounded-sm p-2 my-2" ] [ Condition.view model ]
     ]
 
 

@@ -5,8 +5,9 @@ import Form exposing (Form)
 import Form.Input as Input
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Views.EditItem.Form exposing (ItemForm)
-import Views.Form exposing (inputMoney, radioButton)
+import UI.Button exposing (inputMoney)
+import Views.EditItem.Form exposing (ItemForm, errorToString)
+import Views.Form exposing (radioOption)
 import Views.Style as Style
 
 
@@ -25,7 +26,7 @@ view form =
         ([ div [ class "w-full md:w-1/2" ] <|
             [ label [ class Style.formLabel ] [ text "販売形式" ]
             , div [ class "flex" ]
-                (List.map (radioButton method) sellingMethods)
+                (List.map (radioOption method "sellingMethod") sellingMethods)
             ]
          ]
             ++ (case method.value of
@@ -51,21 +52,23 @@ viewSellingAuction form =
             Form.getFieldAsString "selling.priceBuyout" form
     in
     [ div [ class "w-full md:w-1/4 md:py-2" ] <|
-        inputMoney
+        [ inputMoney
             { label = "開始価格"
-            , error = "1以上の数字で入力してください"
-            , optional = False
-            , isDisabled = False
+            , required = True
+            , name = "priceOpen"
             }
+            errorToString
             priceOpen
+        ]
     , div [ class "w-full md:w-1/4 md:py-2" ] <|
-        inputMoney
+        [ inputMoney
             { label = "即決価格"
-            , error = "0または開始価格以上の数字で入力してください"
-            , optional = False
-            , isDisabled = False
+            , required = True
+            , name = "priceBuyout"
             }
+            errorToString
             priceBuyout
+        ]
     ]
 
 
@@ -86,15 +89,16 @@ viewSellingFixed form =
                 _ ->
                     i [ class "far fa-square" ] []
     in
-    [ div [ class "w-100 w-25-l ph1-l" ] <|
-        inputMoney
+    [ div [ class "w-full md:w-1/4" ] <|
+        [ inputMoney
             { label = "即決価格"
-            , error = "0または開始価格以上の数字で入力してください"
-            , optional = False
-            , isDisabled = False
+            , required = True
+            , name = "priceBuyout"
             }
+            errorToString
             priceBuyout
-    , div [ class "w-100 w-25-l ph1-l self-center" ]
+        ]
+    , div [ class "w-full md:w-1/4 ph1-l self-center" ]
         [ label [ for "allowDiscount", class "pt-2" ]
             [ icon
             , span [ class "" ] [ text "値下げ交渉を受ける" ]

@@ -1,4 +1,13 @@
-module UI.Button exposing (baseInput, darkButton, darkButtonDisabled, darkLink, inputRest, textarea)
+module UI.Button exposing
+    ( baseInput
+    , darkButton
+    , darkButtonDisabled
+    , darkLink
+    , inputMoney
+    , inputRest
+    , textarea
+    , textarea2
+    )
 
 import Form
 import Form.Error
@@ -177,18 +186,13 @@ inputMoney :
     -> Form.FieldState e String
     -> Html Form.Msg
 inputMoney config customErrorToString field =
-    div [ class "flex" ]
+    div [ class "flex " ]
         [ baseInput { label = config.label, required = config.required, type_ = "text", name = config.name }
             customErrorToString
             field
         , span
-            [ classList
-                [ ( "text-white p-2 my-8 h-10 border-t-2 border-b-2 border-white", True )
-                ]
-            , style "width" "8rem"
-            ]
-            [ text "円"
-            ]
+            [ class "p-2 my-8" ]
+            [ text "円" ]
         ]
 
 
@@ -198,4 +202,18 @@ textarea :
     -> Html Form.Msg
 textarea config field =
     labelWithRequired config.label config.required <|
+        Form.Input.textArea field [ class "p-2 h-64 w-full leading-normal border text-grey-darkest" ]
+
+
+labeled : Html msg -> Html msg -> Html msg
+labeled labelChild bodyChild =
+    label [ class "mb-8 block" ]
+        [ labelChild
+        , bodyChild
+        ]
+
+
+textarea2 : Html Form.Msg -> Form.FieldState e String -> Html Form.Msg
+textarea2 label field =
+    labeled label <|
         Form.Input.textArea field [ class "p-2 h-64 w-full leading-normal border text-grey-darkest" ]

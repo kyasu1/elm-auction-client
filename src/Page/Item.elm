@@ -74,7 +74,7 @@ initialTask session itemId =
 
 view : Session -> Model -> Html Msg
 view session model =
-    section [ class "flex items-center justify-center flex-column flex-auto" ] <|
+    section [] <|
         [ article [ class "mw5-ns bl-ns br-ns pv3-ns ph4-ns  b--light-gray w-90 mw8-ns" ]
             [ itemView session model model.item
             ]
@@ -85,22 +85,26 @@ view session model =
 itemView : Session -> Model -> Item Detail -> Html Msg
 itemView session model item =
     div [ class "" ]
-        [ h4 [ class "f6 normal" ] [ text item.details.categoryPath ]
-        , h3 [ class "f5 b" ] [ text item.title ]
-        , div [ class "flex flex-column" ]
-            [ div [ class "flex flex-column flex-row-ns" ]
-                [ imageView model item
-                , detailsView model
+        [ h4 [ class "text-sm italic text-blue py-2" ] [ text item.details.categoryPath ]
+        , h3 [ class "text-base text-black py-2" ] [ text item.title ]
+        , div [ class "flex flex-col md:flex-row p-2" ]
+            [ imageView model item
+            , detailsView model
+            ]
+        , div [ class "p-2 flex flex-row items-center " ]
+            [ Html.node "auction-api-copy-text"
+                [ Html.Attributes.attribute "data-copy-text" item.details.description
+                , class "flex flow-row"
+                ]
+                [ div [] [ text "商品詳細" ]
+                , button [ class "text-grey-darkest hover:text-blue px-2" ]
+                    [ i [ class "fas fa-clipboard" ] []
+                    ]
+                , Html.node "auction-api-copy-text-note" [] []
                 ]
             ]
-        , div [ class "ba-ns ph3-ns pb3-ns mt1 f6" ]
+        , div [ class "border rounded text-sm p-4 leading-loose" ]
             [ Markdown.toHtml [] item.details.description ]
-        , Html.node "auction-api-copy-text"
-            [ Html.Attributes.attribute "data-copy-text" item.details.description
-            ]
-            [ button [ class "bg-blue hover:bg-blue-dark text-white font-black py-2 px-4 rounded block mx-auto -mt-2" ] [ text "商品詳細をコピー" ]
-            , Html.node "auction-api-copy-text-note" [] []
-            ]
         , buttonsView session model item
         ]
 
@@ -121,7 +125,7 @@ imageView { slider } item =
                             image.data
                     )
     in
-    div [ class "w-100 w-40-m w-50-l flex-shrink-0" ]
+    div [ class "w-full md:w-2/5 lg:w-1/2 flex-no-shrink" ]
         [ Slider.view slider |> Html.map SliderMsg
         ]
 
@@ -130,13 +134,13 @@ detailsView : Model -> Html Msg
 detailsView { item, masters } =
     let
         styleTh =
-            "fw6 bb b--black-20 pv2 pr3 bg-white tr"
+            "font-bold text-black border-b border-grey text-right p-2"
 
         styleTd =
-            "    bb b--black-20 pv2 pl3 bg-white tl"
+            "text-black border-b border-grey text-left p-2"
 
         row ( l, v ) =
-            tr []
+            tr [ class "" ]
                 [ th [ class styleTh ] [ text l ]
                 , td [ class styleTd ] [ text v ]
                 ]
@@ -195,8 +199,8 @@ detailsView { item, masters } =
         bottomPart =
             [ ( "管理番号", item.details.itemCode ), ( "更新日", toLongString item.updatedAt ) ]
     in
-    div [ class "w-100 ph1 ph3-ns" ]
-        [ table [ class "f6 w-100 center mw8 collapse" ]
+    div [ class "w-full py-1 md:py-3 px-2" ]
+        [ table [ class "w-full" ]
             [ tbody
                 []
                 (List.map row <| List.concat [ topPart, selling, shipping, bottomPart ])
@@ -209,55 +213,55 @@ buttonsView session model item =
     let
         buttonEdit =
             a
-                [ classList
-                    [ ( Style.buttonSmall, True )
-                    , ( "link white bg-silver", True )
-                    ]
+                [ class Style.buttonSmallBlue
 
                 -- , onClick (EditItem item.id)
                 , Route.href (Route.EditItem item.id)
                 ]
-                [ text "編集" ]
+                [ i [ class "fas fa-edit mr-2" ] [], text "編集" ]
 
         buttonDelete =
-            a
-                [ classList
-                    [ ( Style.buttonSmall, True )
-                    , ( "link white bg-dark-red", True )
-                    ]
+            button
+                [ class Style.buttonSmallRed
                 , onClick Delete
                 ]
-                [ text "削除" ]
+                [ i [ class "fas fa-trash-alt mr-2" ] [], text "削除" ]
 
         buttonDownload =
             button
-                [ classList
-                    [ ( Style.buttonBase, True )
-                    , ( Style.buttonSmall, True )
-                    , ( "white bg-silver flex items-center", True )
-                    ]
+                [ class Style.buttonSmallGrey
                 , onClick PrepareDownload
                 ]
-                [ i [ class "material-icons f5 mr1" ] [ text "file_download" ]
+                [ i [ class "fas fa-download mr-2" ] []
                 , span [] [ text "ダウンロード" ]
                 ]
+
+        buttonHome =
+            a
+                [ class Style.buttonSmallBlue
+                , Route.href Route.Home
+                ]
+                [ i [ class "fas fa-list-ul mr-2" ] [], text "一覧へ" ]
     in
     div []
-        [ ul [ class "flex list pl0 mt2" ]
+        [ div [ class "flex flex-col md:flex-row" ]
             (case session.user of
                 Just user ->
                     if user.id == item.userId then
-                        [ li [ class "ph1" ] [ buttonEdit ]
-                        , li [ class "ph1" ] [ buttonDelete ]
-                        , li [ class "ph1" ] [ buttonDownload ]
+                        [ div [ class "p-2" ] [ buttonEdit ]
+                        , div [ class "p-2" ] [ buttonDelete ]
+                        , div [ class "p-2" ] [ buttonDownload ]
+                        , div [ class "p-2" ] [ buttonHome ]
                         ]
 
                     else
-                        [ li [ class "ph1" ] [ buttonDownload ]
+                        [ div [ class "p-2" ] [ buttonDownload ]
+                        , div [ class "p-2" ] [ buttonHome ]
                         ]
 
                 Nothing ->
-                    [ text "" ]
+                    [ div [ class "p-2" ] [ buttonHome ]
+                    ]
             )
         ]
 
@@ -271,6 +275,7 @@ downloadDialog maybeFileName =
                     [ href <| "/download?filename=" ++ fileName
                     , Html.Attributes.download fileName
                     , onClick CloseDialog
+                    , class ""
                     ]
                     [ text "ダウンロード" ]
 

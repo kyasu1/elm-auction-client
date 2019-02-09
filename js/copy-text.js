@@ -12,7 +12,7 @@ export default {
 				this._button = this.querySelector('button')
 				this._button.addEventListener('click', this._onButtonClick)
 			}
-			
+
 			disconnectedCallback() {
 				clearTimeout(this._timeout)
 			}
@@ -22,7 +22,7 @@ export default {
 				textArea.innerHTML = this.getAttribute('data-copy-text')
 				this.appendChild(textArea)
 				textArea.select()
-			
+
 				let successful = false
 				try {
 					successful = document.execCommand('copy')
@@ -33,7 +33,7 @@ export default {
 				this.removeChild(textArea)
 
 				if (successful) {
-					this._note.textContent = 'Copied to Clipboard'
+					this._note.textContent = 'クリップボードにコピーしました'
 				} else {
 					this._note.textContent = '⌘C to Copy'
 				}

@@ -6,7 +6,7 @@ import Form.Input as Input
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Views.EditItem.Form exposing (ItemForm)
-import Views.Form exposing (radioButton)
+import Views.Form exposing (radioOption)
 import Views.Style as Style
 
 
@@ -41,10 +41,10 @@ form itemForm =
             Form.getFieldAsString "shipping.payer" itemForm
     in
     div []
-        [ div []
+        [ div [ class "flex flex-col" ]
             [ label [ class Style.formLabel ] [ text "送料負担" ]
-            , div [ class "flex flex-column flex-row-ns" ]
-                (List.map (radioButton payer) payers)
+            , div [ class "flex flex-col md:flex-row md:flex-wrap" ]
+                (List.map (radioOption payer "payer") payers)
             ]
         , case payer.value of
             Just "出品者" ->
@@ -64,10 +64,10 @@ formBuyer itemForm =
         method =
             Form.getFieldAsString "shipping.method" itemForm
     in
-    div []
+    div [ class "flex flex-col" ]
         [ label [ class Style.formLabel ] [ text "発送方法" ]
-        , div [ class "flex flex-column flex-row-ns" ]
-            (List.map (radioButton method) methods)
+        , div [ class "flex flex-col md:flex-row md:flex-wrap" ]
+            (List.map (radioOption method "method") methods)
         , case method.value of
             Just "宅急便" ->
                 formSize itemForm
@@ -83,16 +83,16 @@ formSize itemForm =
         size =
             Form.getFieldAsString "shipping.size" itemForm
     in
-    div []
+    div [ class "flex flex-col" ]
         [ label [ class Style.formLabel ] [ text "サイズ" ]
-        , div [ class "flex flex-column flex-row-l" ]
-            (List.map (radioButton size) sizes)
+        , div [ class "flex flex-col md:flex-row md:flex-wrap" ]
+            (List.map (radioOption size "size") sizes)
         , case size.error of
             Nothing ->
                 text ""
 
             _ ->
-                p [ class "f6 dark-red" ] [ text "サイズを指定してください" ]
+                p [ class "font-bold text-red py-1" ] [ text "サイズを指定してください" ]
         ]
 
 

@@ -1,6 +1,6 @@
 module Data.Condition exposing (Condition(..), decoder, encoder, toString)
 
-import Json.Decode as Decode exposing (..)
+import Json.Decode exposing (Decoder, andThen, fail, string, succeed)
 import Json.Encode as Encode exposing (Value)
 
 
