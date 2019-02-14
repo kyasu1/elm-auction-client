@@ -11,10 +11,6 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@fortawesome/fontawesome": "^1.1.8",
-    "@fortawesome/fontawesome-free-brands": "^5.0.13",
-    "@fortawesome/fontawesome-free-regular": "^5.0.13",
-    "@fortawesome/fontawesome-free-solid": "^5.0.13",
     "autoprefixer": "^9.4.7",
     "elm-hot": "^1.0.1",
     "node-elm-compiler": "^5.0.1",
