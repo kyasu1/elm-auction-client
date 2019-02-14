@@ -299,23 +299,21 @@ swapOrder draggedOrder hoveredOrder image =
         image
 
 
-portDataDecoder : Decode.Decoder (List String)
-portDataDecoder =
-    Decode.list <|
-        Decode.field "contents" Decode.string
 
-
-decodeImage : Decode.Value -> List String
-decodeImage data =
-    case Decode.decodeValue portDataDecoder data of
-        Ok src ->
-            src
-
-        Err _ ->
-            []
-
-
-
+-- portDataDecoder : Decode.Decoder (List String)
+-- portDataDecoder =
+--     Decode.list <|
+--         Decode.field "contents" Decode.string
+--
+--
+-- decodeImage : Decode.Value -> List String
+-- decodeImage data =
+--     case Decode.decodeValue portDataDecoder data of
+--         Ok src ->
+--             src
+--
+--         Err _ ->
+--             []
 -- VIEW
 
 
@@ -383,7 +381,7 @@ imageView (Model { dragDropState }) image =
     li [ class "w-50 md:w-1/5" ]
         [ Html.map DragDropMsg (DragDrop.view config style_ image)
         , div [ class "flex" ]
-            [ div [ class "w-1/2 px-2" ]
+            [ div [ class "w-1/2 p-2" ]
                 [ case image.data /= "" of
                     True ->
                         UI.darkButton { label = "削除", icon = "fas fa-trash-alt" } (Clear image)
@@ -391,7 +389,7 @@ imageView (Model { dragDropState }) image =
                     False ->
                         UI.darkButtonDisabled { label = "削除", icon = "fas fa-trash-alt" } (Clear image)
                 ]
-            , div [ class "w-1/2 px-2" ]
+            , div [ class "w-1/2 p-2" ]
                 [ UI.darkButton { label = "登録", icon = "fas fa-file-upload" } (ImageSelected (Just image)) ]
 
             -- , div [ class "w-1/2 px-2" ]

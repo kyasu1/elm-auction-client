@@ -1,14 +1,16 @@
-module Page.Item exposing (Model, Msg, initialTask, update, view)
+module Page.Item exposing (Model, Msg, initialTask, subscriptions, update, view)
 
 {-| Viewing an individual item by registered users
 -}
 
+import Api exposing (apiUrl)
 import Data.Condition as Condition
 import Data.Item as Item exposing (Detail, Item, ItemId)
 import Data.Masters as Masters exposing (Masters)
 import Data.Selling as Selling
 import Data.Session as Session exposing (Session)
 import Data.Shipping as Shipping
+import File.Download as Download
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
@@ -43,7 +45,7 @@ type alias Model =
 initialModel : ( Masters, Session ) -> ( Item Detail, Session ) -> ( Model, Session )
 initialModel ( masters, s1 ) ( item, s2 ) =
     ( { item = item
-      , slider = Slider.initialModel "1200px" (List.map .data item.details.images)
+      , slider = Slider.initialModel "1200px"
       , masters = masters
       , dialog = Nothing
       }
@@ -109,24 +111,17 @@ itemView session model item =
         ]
 
 
+sortImages : Item Detail -> List String
+sortImages item =
+    item.details.images
+        |> List.sortBy .order
+        |> List.map .data
+
+
 imageView : Model -> Item Detail -> Html Msg
 imageView { slider } item =
-    let
-        imageList =
-            item.details.images
-                |> List.sortBy .order
-                |> List.map
-                    (\image ->
-                        if image.data == "" then
-                            "/images/no_image.png"
-                            -- Assets.env Assets.noImage
-
-                        else
-                            image.data
-                    )
-    in
     div [ class "w-full md:w-2/5 lg:w-1/2 flex-no-shrink" ]
-        [ Slider.view slider |> Html.map SliderMsg
+        [ Slider.view (sortImages item) slider |> Html.map SliderMsg
         ]
 
 
@@ -271,16 +266,10 @@ downloadDialog maybeFileName =
     div []
         [ case maybeFileName of
             Just fileName ->
-                a
-                    [ href <| "/download?filename=" ++ fileName
-                    , Html.Attributes.download fileName
-                    , onClick CloseDialog
-                    , class ""
-                    ]
-                    [ text "ダウンロード" ]
+                div [ onClick (FileDownload fileName) ] [ text "ダウンロード" ]
 
             Nothing ->
-                span [] [ text "ダウンロードの準備中" ]
+                div [] [ text "ダウンロードの準備中" ]
         ]
 
 
@@ -303,7 +292,7 @@ deleteDialog =
 type Msg
     = -- EditItem ItemId
       PrepareDownload
-    | FileDownloaded
+    | FileDownload String
     | FileReady (Result Error ( String, Session ))
     | Delete
     | DeleteExecute
@@ -350,14 +339,19 @@ update session msg model =
                 |> Task.attempt FileReady
             )
 
-        FileReady (Ok ( url, updatedSession )) ->
-            ( { model | dialog = Just (downloadDialog (Just url)) }, updatedSession, Cmd.none )
+        FileReady (Ok ( fileName, updatedSession )) ->
+            ( { model | dialog = Just (downloadDialog (Just fileName)) }, updatedSession, Cmd.none )
 
         FileReady (Err error) ->
             ( { model | dialog = Just (Dialog.closableDialog "ダウンロードの準備中にエラーが発生しました" CloseDialog) }, session, Cmd.none )
 
-        FileDownloaded ->
-            ( { model | dialog = Nothing }, session, Cmd.none )
+        FileDownload fileName ->
+            ( { model | dialog = Nothing }, session, Download.url <| apiUrl <| "/download?filename=" ++ fileName )
 
         CloseDialog ->
             ( { model | dialog = Nothing }, session, Cmd.none )
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.map SliderMsg (Slider.subscriptions (sortImages model.item) model.slider)

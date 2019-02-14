@@ -164,6 +164,9 @@ subscriptions model =
             Home homeModel ->
                 Sub.map HomeMsg (Home.subscriptions homeModel)
 
+            Item itemModel ->
+                Sub.map ItemMsg (Item.subscriptions itemModel)
+
             _ ->
                 Sub.none
 

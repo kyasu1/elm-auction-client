@@ -353,8 +353,8 @@ deleteDialog : List (Item ()) -> Html Msg
 deleteDialog listOfItem =
     Dialog.yesNoDialog "商品データの削除"
         (div [ class "f6" ]
-            [ p [] [ text "下記の商品データは削除され編集する事ができなくなります" ]
-            , div [ class "" ] (List.map (\e -> div [ class "truncate" ] [ text e.title ]) listOfItem)
+            [ p [ class "p-2 text-base" ] [ text "下記の商品データは削除され編集する事ができなくなります" ]
+            , div [ class "p-2 text-sm" ] (List.map (\e -> div [ class "p-2 truncate" ] [ text e.title ]) listOfItem)
             ]
         )
         { message = DeleteExecute listOfItem

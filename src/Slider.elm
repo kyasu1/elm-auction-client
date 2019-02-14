@@ -19,6 +19,7 @@ import Html.Events exposing (keyCode, on, onClick)
 import Html.Events.Extra.Touch as Touch
 import Json.Decode as Decode exposing (Decoder, Value)
 import Task
+import UI.Svg exposing (noImage)
 
 
 btnRight : String
@@ -37,11 +38,9 @@ btnLeft =
 
 {-| -}
 type Model
-    = Error
-    | Loaded
+    = InternalState
         { current : Int
         , touch : Maybe ( Float, Float )
-        , images : List String
         , width : String
         , maybeElement : Maybe Browser.Dom.Element
         }
@@ -53,11 +52,11 @@ type Model
 
 {-| -}
 type Msg
-    = Next
-    | Prev
+    = Next (List String)
+    | Prev (List String)
     | SetCurrent Int
     | StartAt ( Float, Float )
-    | EndAt ( Float, Float )
+    | EndAt (List String) ( Float, Float )
     | Cancel ( Float, Float )
     | Other
     | GetElement (Result Browser.Dom.Error Browser.Dom.Element)
@@ -66,82 +65,77 @@ type Msg
 
 {-| -}
 update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
-    case model of
-        Loaded state ->
-            let
-                length =
-                    List.length state.images
+update msg (InternalState state) =
+    let
+        -- length =
+        --     List.length state.images
+        --
+        prev list =
+            clamp 0 (List.length list - 1) (state.current - 1)
 
-                prev =
-                    clamp 0 (length - 1) (state.current - 1)
+        next list =
+            clamp 0 (List.length list - 1) (state.current + 1)
 
-                next =
-                    clamp 0 (length - 1) (state.current + 1)
+        width =
+            case state.maybeElement of
+                Just element ->
+                    element.element.width
 
-                width =
-                    case state.maybeElement of
-                        Just element ->
-                            element.element.width
+                Nothing ->
+                    1
+
+        ( newState, cmd ) =
+            case msg of
+                Next images ->
+                    ( { state | current = next images }, getElement )
+
+                Prev images ->
+                    ( { state | current = prev images }, getElement )
+
+                SetCurrent index ->
+                    ( { state | current = index }, getElement )
+
+                StartAt coord ->
+                    ( { state | touch = Just coord }, Cmd.none )
+
+                EndAt images end ->
+                    case state.touch of
+                        Just start ->
+                            if (Tuple.first end - Tuple.first start) / width > 0.2 then
+                                ( { state | current = prev images, touch = Nothing }, Cmd.none )
+
+                            else if Tuple.first end == Tuple.first start && width > 0 then
+                                if (width - Tuple.first end) / width > 0.8 then
+                                    ( { state | current = prev images, touch = Nothing }, Cmd.none )
+
+                                else if (width - Tuple.first end) / width < 0.2 then
+                                    ( { state | current = next images, touch = Nothing }, Cmd.none )
+
+                                else
+                                    ( state, Cmd.none )
+
+                            else if (Tuple.first end - Tuple.first start) / width < -0.2 then
+                                ( { state | current = next images, touch = Nothing }, Cmd.none )
+
+                            else
+                                ( { state | touch = Nothing }, Cmd.none )
 
                         Nothing ->
-                            1
-
-                ( newState, cmd ) =
-                    case msg of
-                        Next ->
-                            ( { state | current = next }, getElement )
-
-                        Prev ->
-                            ( { state | current = prev }, getElement )
-
-                        SetCurrent index ->
-                            ( { state | current = index }, getElement )
-
-                        StartAt coord ->
-                            ( { state | touch = Just coord }, Cmd.none )
-
-                        EndAt end ->
-                            case state.touch of
-                                Just start ->
-                                    if (Tuple.first end - Tuple.first start) / width > 0.2 then
-                                        ( { state | current = prev, touch = Nothing }, Cmd.none )
-
-                                    else if Tuple.first end == Tuple.first start && width > 0 then
-                                        if (width - Tuple.first end) / width > 0.8 then
-                                            ( { state | current = prev, touch = Nothing }, Cmd.none )
-
-                                        else if (width - Tuple.first end) / width < 0.2 then
-                                            ( { state | current = next, touch = Nothing }, Cmd.none )
-
-                                        else
-                                            ( state, Cmd.none )
-
-                                    else if (Tuple.first end - Tuple.first start) / width < -0.2 then
-                                        ( { state | current = next, touch = Nothing }, Cmd.none )
-
-                                    else
-                                        ( { state | touch = Nothing }, Cmd.none )
-
-                                Nothing ->
-                                    ( { state | touch = Nothing }, Cmd.none )
-
-                        Cancel _ ->
                             ( { state | touch = Nothing }, Cmd.none )
 
-                        Other ->
-                            ( state, Cmd.none )
+                Cancel _ ->
+                    ( { state | touch = Nothing }, Cmd.none )
 
-                        GetElement result ->
-                            ( { state | maybeElement = Result.toMaybe result }, Cmd.none )
+                Other ->
+                    ( state, Cmd.none )
 
-                        OnResize _ _ ->
-                            ( state, getElement )
-            in
-            ( Loaded newState, cmd )
+                GetElement result ->
+                    ( { state | maybeElement = Result.toMaybe result }, Cmd.none )
 
-        _ ->
-            ( model, Cmd.none )
+                OnResize _ _ ->
+                    ( state, getElement )
+    in
+    ( InternalState newState, cmd )
 
 
 
@@ -156,51 +150,41 @@ getElement =
 -- VIEW
 
 
-view : Model -> Html Msg
-view model =
-    case model of
-        Loaded { current, touch, images, width, maybeElement } ->
-            div []
-                [ div
-                    [ id "elm-slider"
-                    , class "overflow-hidden relative"
-                    , style "max-width" width
-                    , Touch.onStart (StartAt << touchCoordinates)
-                    , Touch.onEnd (EndAt << touchCoordinates)
-                    , Touch.onCancel (Cancel << touchCoordinates)
+view : List String -> Model -> Html Msg
+view images (InternalState { current, touch, width, maybeElement }) =
+    div []
+        [ div
+            [ id "elm-slider"
+            , class "overflow-hidden relative"
+            , style "max-width" width
+            , Touch.onStart (StartAt << touchCoordinates)
+            , Touch.onEnd (EndAt images << touchCoordinates)
+            , Touch.onCancel (Cancel << touchCoordinates)
+            ]
+            [ div
+                [ style "transition" "all 0.5s ease-in"
+                , style "transform" ("translateX(" ++ toPx (Maybe.map (\{ element } -> current * round element.width |> negate) maybeElement |> Maybe.withDefault 0) ++ ")")
+                , style "touch-action" "none"
+                , class "flex"
+                ]
+                (List.indexedMap (stage width current) images)
+            , if current > 0 then
+                div [ class "cursor-pointer h-full flex items-center pin-l pin-t absolute ", onClick <| Prev images ]
+                    [ div [ class "w-8 text-right text-2xl md:text-4xl mx-2 md:mx-4" ] [ img [ src btnLeft ] [] ]
                     ]
-                    [ div
-                        [ style "transition" "all 0.5s ease-in"
-                        , style "transform" ("translateX(" ++ toPx (Maybe.map (\{ element } -> current * round element.width |> negate) maybeElement |> Maybe.withDefault 0) ++ ")")
-                        , style "touch-action" "none"
-                        , class "flex"
-                        ]
-                        (List.indexedMap (stage width current) images)
-                    , if current > 0 then
-                        div [ class "cursor-pointer h-full flex items-center pin-l pin-t absolute ", onClick Prev ]
-                            [ div [ class "w-8 text-right text-2xl md:text-4xl mx-2 md:mx-4" ] [ img [ src btnLeft ] [] ]
-                            ]
 
-                      else
-                        text ""
-                    , if current + 1 < List.length images then
-                        div [ class "cursor-pointer h-full flex items-center pin-r pin-t absolute", onClick Next ]
-                            [ div [ class "w-8 text-left text-2xl md:text-4xl mx-2 md:mx-4" ] [ img [ src btnRight ] [] ]
-                            ]
-
-                      else
-                        text ""
+              else
+                text ""
+            , if current + 1 < List.length images then
+                div [ class "cursor-pointer h-full flex items-center pin-r pin-t absolute", onClick <| Next images ]
+                    [ div [ class "w-8 text-left text-2xl md:text-4xl mx-2 md:mx-4" ] [ img [ src btnRight ] [] ]
                     ]
-                , div [ style "max-width" width, class "flex justify-center" ] [ dots current images ]
-                ]
 
-        Error ->
-            div
-                [ class "flex flex-col items-center justify-center w-full h-full"
-                ]
-                [ p [] [ text "Initialization Failed" ]
-                , p [] [ text "Slider" ]
-                ]
+              else
+                text ""
+            ]
+        , div [ style "max-width" width, class "flex justify-center" ] [ dots current images ]
+        ]
 
 
 touchCoordinates : Touch.Event -> ( Float, Float )
@@ -212,12 +196,16 @@ touchCoordinates touchEvent =
 
 stage : String -> Int -> Int -> String -> Html msg
 stage width current index image =
-    img
-        [ src image
-        , style "width" width
-        , class "h-full flex-no-shrink min-w-0"
-        ]
-        []
+    if image == "" then
+        text ""
+
+    else
+        img
+            [ src image
+            , style "width" width
+            , class "h-full flex-no-shrink min-w-0"
+            ]
+            []
 
 
 toPx : Int -> String
@@ -251,7 +239,10 @@ dotsItem current index image =
         dot =
             "hidden md:block md:w-full md:h-auto"
     in
-    if current == index then
+    if image == "" then
+        text ""
+
+    else if current == index then
         div
             [ class <| String.join " " [ mobile, ns, active ]
             ]
@@ -274,47 +265,48 @@ dotsItem current index image =
 init : Value -> ( Model, Cmd Msg )
 init flags =
     case Decode.decodeValue flagsDecoder flags of
-        Ok { width, images } ->
-            ( initialModel width images
+        Ok { width } ->
+            ( initialModel width
             , getElement
             )
 
         Err _ ->
-            ( Error
+            ( initialModel "600"
             , Cmd.none
             )
 
 
-initialModel : String -> List String -> Model
-initialModel width images =
-    Loaded { current = 0, touch = Nothing, images = images, width = width, maybeElement = Nothing }
+initialModel : String -> Model
+initialModel width =
+    InternalState { current = 0, touch = Nothing, width = width, maybeElement = Nothing }
 
 
 
 -- Subscriptions
 
 
-subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions : List String -> Model -> Sub Msg
+subscriptions images model =
     Sub.batch
-        [ Browser.Events.onKeyDown keyDecoder
-        , Browser.Events.onResize OnResize
+        [ Browser.Events.onKeyDown (keyDecoder images)
+        , Browser.Events.onResize
+            OnResize
         ]
 
 
-keyDecoder : Decoder Msg
-keyDecoder =
-    Decode.map toDirection (Decode.field "key" Decode.string)
+keyDecoder : List String -> Decoder Msg
+keyDecoder list =
+    Decode.map (toDirection list) (Decode.field "key" Decode.string)
 
 
-toDirection : String -> Msg
-toDirection string =
+toDirection : List String -> String -> Msg
+toDirection list string =
     case string of
         "ArrowLeft" ->
-            Prev
+            Prev list
 
         "ArrowRight" ->
-            Next
+            Next list
 
         _ ->
             Other
@@ -333,13 +325,11 @@ flagsDecoder =
 
 
 -- Main
-
-
-main : Program Value Model Msg
-main =
-    Browser.element
-        { init = init
-        , view = view
-        , update = update
-        , subscriptions = subscriptions
-        }
+-- main : Program Value Model Msg
+-- main =
+--     Browser.element
+--         { init = init
+--         , view = view
+--         , update = update
+--         , subscriptions = subscriptions
+--         }
